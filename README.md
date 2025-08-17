@@ -35,26 +35,19 @@ The architecture is a multi-stage pipeline designed to keep all CPU cores satura
 
 ```mermaid
 graph TD
-    A[Input Transaction Batch] --> B{Parallel Scheduler};
-    B --> C1[Worker 1: Execute Tx_A];
-    B --> C2[Worker 2: Execute Tx_B];
-    B --> C3[Worker N: Execute Tx_N];
+    InputBatch[Input Transaction Batch] --> Scheduler{Parallel Scheduler};
+    Scheduler --> Worker1[Worker 1];
+    Scheduler --> Worker2[Worker 2];
+    Scheduler --> WorkerN[Worker N];
 
-    subgraph "1. Parallel Execution Phase (CPU Bound)"
-        C1 -- "(ReadSet_A, WriteSet_A)" --> D{Validation & Commit Engine};
-        C2 -- "(ReadSet_B, WriteSet_B)" --> D;
-        C3 -- "(ReadSet_N, WriteSet_N)" --> D;
-    end
+    Worker1 --> ValidationEngine{Validation Engine};
+    Worker2 --> ValidationEngine;
+    WorkerN --> ValidationEngine;
 
-    subgraph "2. Validation & Commit Phase (Sequential Logic)"
-        D -- "Check for conflicts in order" --> E{Commit or Abort};
-    end
-
-    E -- "Commit valid Tx" --> F["Final State (Concurrent Map)"];
-    E -- "Abort invalid Tx" --> G{Re-execution Queue};
-    G --> B;
-
-    style F fill:#cde4c9,stroke:#333,stroke-width:2px
+    ValidationEngine --> CommitAbort{Commit or Abort};
+    CommitAbort -- "Valid" --> FinalState["Final State"];
+    CommitAbort -- "Invalid" --> ReExecutionQueue{Re-execution Queue};
+    ReExecutionQueue --> Scheduler;
 ```
 
 -----
