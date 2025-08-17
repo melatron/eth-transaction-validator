@@ -17,4 +17,4 @@
 
 4.  **Distributed CPU-Bound System Architecture**
     * An architecture for a distributed, multi-computer system designed to maximize performance for CPU-bound tasks, including a discussion of tradeoffs.
-    * [distributed system architecture](./4_DISTRIBUTED_SYSTEM_ARCHITECTURE.md)
+    * [Distributed system architecture](./4_DISTRIBUTED_SYSTEM_ARCHITECTURE.md)
