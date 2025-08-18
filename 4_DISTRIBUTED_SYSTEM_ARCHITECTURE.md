@@ -13,7 +13,7 @@ The integration would look like this:
 3.  **Consumers (Rust Workers)**: A distributed fleet of Rust applications acts as the consumers.
     * They are configured as a single **Consumer Group**. Kafka automatically assigns topic partitions among the active consumers in the group. If a worker crashes, Kafka rebalances its partitions to other healthy workers, providing fault tolerance.
     * Each worker polls Kafka for batches of messages from its assigned partitions.
-    * For each message, it deserializes the job data and uses a thread pool library like **Rayon** to spread the CPU-bound computation across all available cores on that machine.
+    * For each message, it deserializes the job data and uses a thread pool library like [**Rayon**](https://docs.rs/rayon/latest/rayon/) to spread the CPU-bound computation across all available cores on that machine.
     * Once a job is complete, the worker writes the result to a destination (e.g., a database, another Kafka topic) and commits the message offset to Kafka to mark it as processed.
 
 ### Drawbacks, Side Effects, and Challenges
@@ -33,5 +33,5 @@ The integration would look like this:
     * The architecture would change completely. I would replace the asynchronous queue (Kafka) with a **synchronous, load-balanced RPC system (like gRPC or a custom TCP protocol)**.
     * The goal would be to route a user's request to the nearest available worker as quickly as possible. I would use in-memory caches extensively to provide instant responses for common requests. Batching would be eliminated in favor of processing each request immediately.
 * **If the system was DATA-bound (I/O-bound):**
-    * The focus would shift from CPU optimization to I/O optimization. The Rust workers would be built on an **asynchronous (`async/await`) runtime** like Tokio.
+    * The focus would shift from CPU optimization to I/O optimization. The Rust workers would be built on an **asynchronous (`async/await`) runtime** like [Tokio](https://docs.rs/tokio/latest/tokio/).
     * This allows a single thread to juggle thousands of concurrent I/O operations (reading from disks, databases, or network sockets). Instead of a CPU-bound thread pool like Rayon, I would maximize the number of concurrent `async` tasks.
