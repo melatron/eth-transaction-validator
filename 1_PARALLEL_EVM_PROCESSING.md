@@ -23,24 +23,20 @@ Conflicts are identified and resolved *after* the initial parallel execution pha
 
 ### Detailed Validation Algorithm and Optimization
 
-The process of checking a transaction's read set against all previous write sets can be slow if not handled carefully.
+The validation process, which checks a transaction's read set against preceding write sets, can be a performance bottleneck.
 
-#### The Simple (Naive) Algorithm
+#### The Naive Algorithm
 
-Imagine a single list of all the storage locations that have been changed so far in the batch. For each new transaction you validate, you have to check every single item it read against this growing list. This gets slower as you validate more transactions.
+A simple approach is to maintain a cumulative `HashSet` of all storage keys modified by already-validated transactions within the batch. For each subsequent transaction, the algorithm iterates through its read set and checks for membership in this cumulative write set. The performance of this check degrades as the set of committed writes grows.
 
 #### The Optimized Algorithm: State Versioning
 
-A much faster way is to give each piece of data a version number, like a version on a document.
+A more performant method is to version each state slot.
 
-1.  **During Execution**: When a transaction reads a piece of data, it not only notes *what* it read but also the *version number* of that data at that moment (e.g., "Account A, Version 5").
-2.  **During Validation**: The validator keeps track of the latest version number for every piece of data. To validate a transaction, it simply checks:
-    * "Did you read 'Account A, Version 5'?"
-    * "Is the latest version of 'Account A' still 5?"
+1.  **During Execution**: When a transaction reads a state slot, it records both the key and its current version number (e.g., a simple counter). The read set thus becomes a map of `StorageKey` to `Version`.
+2.  **During Validation**: The validator tracks the latest committed version for each key. To validate a transaction, it compares the version number recorded in the transaction's read set against the latest committed version for that same key. If the read version is older, a conflict is detected, and the transaction is invalid.
 
-    If the latest version is now 6, it means another transaction updated it, and the data you read is old. The transaction is invalid and must be re-run. If the versions match, it's valid.
-
-**Why is this faster?** Checking a version number is a direct, instant lookup and a simple number comparison. It's much quicker than searching through a long list of changed items, making the validation process significantly more efficient.
+This optimization replaces a potentially slow set-membership check with a direct map lookup and an integer comparison, which is significantly more efficient and scalable.
 
 ### Execution and Storage Design
 
